@@ -41,6 +41,8 @@ const state = {
   selectedReward: null,
   isTouchMode: false,
   previewIndex: null,
+  hintDismissed: false,
+  hintHideTimer: null,
 };
 
 const screens = {
@@ -74,6 +76,8 @@ function initEvents() {
     pulseDuckCursor();
     playQuack();
     switchScreen(screens.two);
+    updateInteractionHint(true);
+    scheduleHintAutoHide();
   });
 
   document.addEventListener("pointerdown", (event) => {
@@ -88,17 +92,21 @@ function initEvents() {
 }
 
 function detectInteractionMode() {
-  state.isTouchMode = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+  const hasCoarsePointer = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+  const hasTouchPoints = (navigator.maxTouchPoints || 0) > 0;
+  const hasTouchEvent = "ontouchstart" in window;
+
+  state.isTouchMode = hasCoarsePointer || hasTouchPoints || hasTouchEvent;
   document.body.classList.toggle("touch-mode", state.isTouchMode);
   updateInteractionHint();
 }
 
-function updateInteractionHint() {
+function updateInteractionHint(forceShow = false) {
   if (!interactionHint) {
     return;
   }
 
-  if (state.isTouchMode) {
+  if (state.isTouchMode && (!state.hintDismissed || forceShow)) {
     interactionHint.textContent =
       "En movil: toca una carta para ver el preview y vuelve a tocar para seleccionarla.";
     interactionHint.classList.remove("d-none");
@@ -106,6 +114,22 @@ function updateInteractionHint() {
   }
 
   interactionHint.classList.add("d-none");
+}
+
+function scheduleHintAutoHide() {
+  if (!state.isTouchMode || !interactionHint) {
+    return;
+  }
+
+  clearTimeout(state.hintHideTimer);
+  state.hintHideTimer = setTimeout(() => {
+    dismissInteractionHint();
+  }, 6500);
+}
+
+function dismissInteractionHint() {
+  state.hintDismissed = true;
+  updateInteractionHint();
 }
 
 function initCalendly() {
@@ -203,6 +227,7 @@ function renderChoiceBoxes() {
         clearTouchPreview();
         box.classList.add("preview");
         state.previewIndex = index;
+        dismissInteractionHint();
         return;
       }
 
@@ -231,6 +256,7 @@ async function handleChoice(index) {
 async function revealRealChoice(index) {
   state.isChoiceLocked = true;
   clearTouchPreview();
+  dismissInteractionHint();
 
   const boxes = [...choiceGrid.querySelectorAll(".choice-box")];
   const selected = boxes[index];
