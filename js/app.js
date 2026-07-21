@@ -1,5 +1,6 @@
 const WEBHOOK_URL = "";
 const CALENDLY_URL = "https://calendly.com/elenaakage/30min";
+const MOBILE_BREAKPOINT = 900;
 
 const REWARDS = [
   {
@@ -89,14 +90,20 @@ function initEvents() {
       clearTouchPreview();
     }
   });
+
+  window.addEventListener("resize", () => {
+    const previousMode = state.isTouchMode;
+    detectInteractionMode();
+
+    // Re-render only when mode changes and no card has been selected yet.
+    if (previousMode !== state.isTouchMode && !state.isChoiceLocked) {
+      renderChoiceBoxes();
+    }
+  });
 }
 
 function detectInteractionMode() {
-  const hasCoarsePointer = window.matchMedia("(hover: none), (pointer: coarse)").matches;
-  const hasTouchPoints = (navigator.maxTouchPoints || 0) > 0;
-  const hasTouchEvent = "ontouchstart" in window;
-
-  state.isTouchMode = hasCoarsePointer || hasTouchPoints || hasTouchEvent;
+  state.isTouchMode = window.innerWidth <= MOBILE_BREAKPOINT;
   document.body.classList.toggle("touch-mode", state.isTouchMode);
   updateInteractionHint();
 }
@@ -108,7 +115,7 @@ function updateInteractionHint(forceShow = false) {
 
   if (state.isTouchMode && (!state.hintDismissed || forceShow)) {
     interactionHint.textContent =
-      "En movil: toca una carta para ver el preview y vuelve a tocar para seleccionarla.";
+      "Toca una carta para ver el preview y vuelve a tocar para seleccionarla.";
     interactionHint.classList.remove("d-none");
     return;
   }
