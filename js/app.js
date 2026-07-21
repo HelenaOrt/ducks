@@ -115,7 +115,7 @@ function updateInteractionHint(forceShow = false) {
 
   if (state.isTouchMode && (!state.hintDismissed || forceShow)) {
     interactionHint.textContent =
-      "Toca una carta para ver el preview y vuelve a tocar para seleccionarla.";
+      "Toca una carta para verla y toca de nuevo para elegirla.";
     interactionHint.classList.remove("d-none");
     return;
   }
