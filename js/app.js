@@ -39,6 +39,8 @@ const RIBBON_COLORS = ["#ff6fa8", "#ffa149", "#66d6a4", "#9d7bff"];
 const state = {
   isChoiceLocked: false,
   selectedReward: null,
+  isTouchMode: false,
+  previewIndex: null,
 };
 
 const screens = {
@@ -52,6 +54,7 @@ const burstLayer = document.getElementById("duckBurstLayer");
 const openGiftBtn = document.getElementById("openGiftBtn");
 const choiceGrid = document.getElementById("choiceGrid");
 const choiceMessage = document.getElementById("choiceMessage");
+const interactionHint = document.getElementById("interactionHint");
 const calendlyFrame = document.getElementById("calendlyFrame");
 const selectedChoiceField = document.getElementById("selectedChoiceField");
 
@@ -59,6 +62,7 @@ let audioContext = null;
 let fleeTimer = null;
 
 function init() {
+  detectInteractionMode();
   initCursor();
   renderChoiceBoxes();
   initEvents();
@@ -71,6 +75,37 @@ function initEvents() {
     playQuack();
     switchScreen(screens.two);
   });
+
+  document.addEventListener("pointerdown", (event) => {
+    if (!state.isTouchMode || state.previewIndex === null) {
+      return;
+    }
+
+    if (!event.target.closest(".choice-box")) {
+      clearTouchPreview();
+    }
+  });
+}
+
+function detectInteractionMode() {
+  state.isTouchMode = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+  document.body.classList.toggle("touch-mode", state.isTouchMode);
+  updateInteractionHint();
+}
+
+function updateInteractionHint() {
+  if (!interactionHint) {
+    return;
+  }
+
+  if (state.isTouchMode) {
+    interactionHint.textContent =
+      "En movil: toca una carta para ver el preview y vuelve a tocar para seleccionarla.";
+    interactionHint.classList.remove("d-none");
+    return;
+  }
+
+  interactionHint.classList.add("d-none");
 }
 
 function initCalendly() {
@@ -119,6 +154,8 @@ function switchScreen(nextScreen) {
 }
 
 function renderChoiceBoxes() {
+  const hintText = state.isTouchMode ? "Toca para descubrir" : "Pasa el cursor";
+
   const boxHtml = REWARDS.map((reward, index) => {
     const color = RIBBON_COLORS[index % RIBBON_COLORS.length];
 
@@ -128,7 +165,7 @@ function renderChoiceBoxes() {
           <div class="tarot-face tarot-front" style="--tarot-accent:${color}">
             <div class="tarot-glyph">✦</div>
             <div class="tarot-title">Opcion ${index + 1}</div>
-            <div class="tarot-subtitle">Pasa el cursor</div>
+            <div class="tarot-subtitle">${hintText}</div>
           </div>
           <div class="tarot-face tarot-back">
             <div class="choice-reward">
@@ -154,16 +191,33 @@ function renderChoiceBoxes() {
 
   choiceGrid.querySelectorAll(".choice-box").forEach((box, index) => {
     box.addEventListener("pointerdown", (event) => {
-      moveOtherBoxes(index, event.clientX, event.clientY);
+      if (!state.isTouchMode) {
+        moveOtherBoxes(index, event.clientX, event.clientY);
+      }
     });
 
     box.addEventListener("click", async (event) => {
       event.preventDefault();
+
+      if (state.isTouchMode && !box.classList.contains("preview") && !state.isChoiceLocked) {
+        clearTouchPreview();
+        box.classList.add("preview");
+        state.previewIndex = index;
+        return;
+      }
+
       pulseDuckCursor();
       playQuack();
       await handleChoice(index);
     });
   });
+}
+
+function clearTouchPreview() {
+  choiceGrid.querySelectorAll(".choice-box.preview").forEach((box) => {
+    box.classList.remove("preview");
+  });
+  state.previewIndex = null;
 }
 
 async function handleChoice(index) {
@@ -176,6 +230,7 @@ async function handleChoice(index) {
 
 async function revealRealChoice(index) {
   state.isChoiceLocked = true;
+  clearTouchPreview();
 
   const boxes = [...choiceGrid.querySelectorAll(".choice-box")];
   const selected = boxes[index];
