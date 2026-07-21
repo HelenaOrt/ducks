@@ -196,6 +196,17 @@ h2 {
   font-size: 0.95em;
 }
 
+.interaction-hint {
+  margin: 0.35rem auto 1rem;
+  width: min(640px, 92%);
+  font-size: 0.9rem;
+  color: #6f6579;
+  background: #fff2f8;
+  border: 1px solid #f4cbde;
+  border-radius: 12px;
+  padding: 0.55rem 0.75rem;
+}
+
 .btn-main {
   margin-top: 1.2rem;
   padding: 0.8rem 1.7rem;
@@ -519,6 +530,19 @@ h2 {
 .choice-box.selected .tarot-card,
 .choice-box.zoom-center .tarot-card,
 .choice-box.final-picked .tarot-card {
+  transform: rotateY(180deg);
+}
+
+body.touch-mode .choice-box:hover .tarot-card {
+  transform: none;
+}
+
+body.touch-mode .choice-box.preview .tarot-card,
+body.touch-mode .choice-box:focus .tarot-card,
+body.touch-mode .choice-box:focus-visible .tarot-card,
+body.touch-mode .choice-box.selected .tarot-card,
+body.touch-mode .choice-box.zoom-center .tarot-card,
+body.touch-mode .choice-box.final-picked .tarot-card {
   transform: rotateY(180deg);
 }
 
